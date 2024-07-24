@@ -237,6 +237,13 @@
        (argument_patterns (long_identifier (identifier)))
        ] @font-lock-variable-name-face)
 
+     ((long_identifier_or_op
+       (long_identifier (identifier) @font-lock-type-face "." (identifier):* @font-lock-function-call-face))
+      (:match "^[A-Z0-9]" @font-lock-type-face))
+
+     (long_identifier_or_op
+      (long_identifier (identifier) "." (identifier) @font-lock-function-call-face))
+
      (member_defn
       (method_or_prop_defn
        [
@@ -251,33 +258,22 @@
       :anchor
       [
        (long_identifier_or_op
-        [
-         (long_identifier (identifier):* (identifier) @font-lock-function-call-face)
-         (identifier) @font-lock-function-call-face
-         ]
-        )
+        (identifier) @font-lock-function-call-face)
        (typed_expression :anchor (long_identifier_or_op (long_identifier (identifier):* :anchor (identifier) @font-lock-function-call-face)))
        (dot_expression base: (_) @font-lock-variable-use-face field: (_) @font-lock-function-call-face)
        ] @font-lock-function-call-face)
 
      ((infix_expression
-       :anchor
-       (_)
-       :anchor
        (infix_op) @operator @font-lock-operator-face
        :anchor
-       (_) @font-lock-function-call-face)
+       (_))
       (:equal @operator "|>"))
 
      ((infix_expression
        :anchor
-       (_) @font-lock-function-call-face
-       :anchor
-       (infix_op) @operator @font-lock-operator-face
-       :anchor
-       (_))
-      (:equal @operator "<|"))
-     )
+       (_) ;; @font-lock-function-call-face
+       (infix_op) @operator @font-lock-operator-face)
+      (:equal @operator "<|")))
 
    :language 'fsharp
    :feature 'module
