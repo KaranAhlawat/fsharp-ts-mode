@@ -373,8 +373,8 @@ Return nil if there is no name or if NODE is not a defun node."
     (setq-local comment-start-skip (rx "//" (* (syntax whitespace))))
 
     (setq-local treesit-font-lock-settings fsharp-ts--treesit-font-lock-settings)
-    (setq-local treesit-font-lock-feature-list '((comment)
-                                                 (keyword type constant module)
+    (setq-local treesit-font-lock-feature-list '((comment keyword)
+                                                 (type constant module)
                                                  (extra function variable)
                                                  (operator literal punctuation)))
 
