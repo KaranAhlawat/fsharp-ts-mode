@@ -148,9 +148,11 @@
   "Operators for `fsharp-ts-mode'.")
 
 (defun fsharp-ts--check-fails (node)
+  "Check if NODE is a keyword for indicating failure."
   (seq-contains-p '("failwith" "failwithf" "raise" "reraise") node))
 
 (defun fsharp-ts--check-builtin (node)
+  "Check if NODE is a builtin type."
   (seq-contains-p '("bool" "byte" "sbyte" "int16" "uint16" "int" "uint" "int64" "uint64" "nativeint"
                     "unativeint" "decimal" "float" "double" "float32" "single" "char" "string" "unit") node))
 
@@ -168,6 +170,8 @@
    :language 'fsharp
    :feature 'keyword
    `([,@fsharp-ts--keywords] @font-lock-keyword-face
+     ((identifier) @font-lock-keyword-face
+      (:equal "this" @font-lock-keyword-face))
      [,@fsharp-ts--keywords-conditional] @font-lock-keyword-face
      [,@fsharp-ts--keywords-import] @font-lock-keyword-face
      [,@fsharp-ts--keywords-modifier] @font-lock-keyword-face
@@ -204,11 +208,56 @@
      (union_type_case (identifier) @font-lock-constant-face)
      (rules
       (rule
-       pattern: (_) @font-lock-constant-face
+       :anchor
+       pattern: [(const) @font-lock-constant-face
+                 (identifier_pattern :anchor (_) @font-lock-constant-face)
+                 (_) @font-lock-variable-name-face]
        block: (_)))
      (ce_expression
       :anchor
       (_) @font-lock-constant-face))
+
+   :language 'fsharp
+   :feature 'function
+   '((function_declaration_left
+      :anchor (access_modifier):? @font-lock-keyword-face
+      :anchor (_) @font-lock-function-name-face
+      [(argument_patterns)
+       (argument_patterns (long_identifier (identifier)))
+       ] @font-lock-variable-name-face)
+
+     ((long_identifier_or_op
+       (long_identifier (identifier) @font-lock-type-face "." (identifier):+ @font-lock-function-call-face))
+      (:match "^[A-Z0-9]" @font-lock-type-face))
+
+     (member_defn
+      (method_or_prop_defn
+       [
+        (property_or_ident) @font-lock-function-name-face
+        (property_or_ident
+         instance: (identifier) @font-lock-variable-name-face
+         method: (identifier) @font-lock-function-name-face)
+        ]
+       args: (_):* @font-lock-variable-name-face))
+
+     (application_expression
+      :anchor
+      [(long_identifier_or_op
+        (identifier) @font-lock-function-call-face)
+       (typed_expression :anchor (long_identifier_or_op (long_identifier (identifier):* :anchor (identifier) @font-lock-function-call-face)))
+       ] @font-lock-function-call-face)
+
+     ((infix_expression
+       (infix_op) @operator @font-lock-operator-face
+       :anchor
+       (_))
+      (:equal @operator "|>"))
+
+     ((infix_expression
+       :anchor
+       (_) ;; @font-lock-function-call-face
+       (infix_op) @operator @font-lock-operator-face)
+      (:equal @operator "<|")))
 
    :language 'fsharp
    :feature 'variable
@@ -224,56 +273,24 @@
       (record_field
        :anchor
        (identifier) @font-lock-property-name-face))
-     (dot_expression
-      base: (_) @font-lock-type-face
-      field: (_) @font-lock-property-use-face)
-     (value_declaration_left :anchor (_) @font-lock-variable-name-face))
-
-   :language 'fsharp
-   :feature 'function
-   '((function_declaration_left
-      :anchor (_) @font-lock-function-name-face
-      [(argument_patterns)
-       (argument_patterns (long_identifier (identifier)))
-       ] @font-lock-variable-name-face)
-
-     ((long_identifier_or_op
-       (long_identifier (identifier) @font-lock-type-face "." (identifier):* @font-lock-function-call-face))
+     ((dot_expression
+       base: (_) @font-lock-type-face
+       field: (_) @font-lock-property-use-face)
       (:match "^[A-Z0-9]" @font-lock-type-face))
-
+     (dot_expression
+      base: (_) @font-lock-variable-use-face
+      field: (_) @font-lock-property-use-face)
      (long_identifier_or_op
-      (long_identifier (identifier) "." (identifier) @font-lock-function-call-face))
-
-     (member_defn
-      (method_or_prop_defn
-       [
-        (property_or_ident) @font-lock-function-name-face
-        (property_or_ident
-         instance: (identifier) @font-lock-variable-name-face
-         method: (identifier) @font-lock-function-name-face)
-        ]
-       args: (_):* @font-lock-variable-name-face))
-
-     (application_expression
-      :anchor
-      [
-       (long_identifier_or_op
-        (identifier) @font-lock-function-call-face)
-       (typed_expression :anchor (long_identifier_or_op (long_identifier (identifier):* :anchor (identifier) @font-lock-function-call-face)))
-       (dot_expression base: (_) @font-lock-variable-use-face field: (_) @font-lock-function-call-face)
-       ] @font-lock-function-call-face)
-
-     ((infix_expression
-       (infix_op) @operator @font-lock-operator-face
-       :anchor
-       (_))
-      (:equal @operator "|>"))
-
-     ((infix_expression
-       :anchor
-       (_) ;; @font-lock-function-call-face
-       (infix_op) @operator @font-lock-operator-face)
-      (:equal @operator "<|")))
+      (long_identifier (_) @font-lock-variable-use-face "." (identifier) @font-lock-function-call-face))
+     ((long_identifier_or_op
+       (_) @font-lock-type-face
+       "." (identifier):+ @font-lock-property-use-face)
+      (:match "^[A-Z0-9]" @font-lock-type-face))
+     (long_identifier_or_op
+      (_) @font-lock-variable-use-face
+      "." (identifier):+ @font-lock-property-use-face)
+     (long_identifier_or_op (identifier) @font-lock-variable-use-face)
+     (value_declaration_left :anchor (_) @font-lock-variable-name-face))
 
    :language 'fsharp
    :feature 'module
@@ -311,6 +328,7 @@
 
    :language 'fsharp
    :feature 'punctuation
+   :override t
    `([,@fsharp-ts--punctuation-bracket] @font-lock-bracket-face
      (format_string_eval ["{" "}"] @font-lock-punctuation-face)
      [,@fsharp-ts--delimiters] @font-lock-delimiter-face)
@@ -327,7 +345,11 @@
         (argument_spec
          (argument_name_spec
           "?":? @font-lock-regex-face
-          name: (_) @font-lock-variable-name-face)))))))
+          name: (_) @font-lock-variable-name-face)))))
+     (member_signature
+      :anchor
+      (identifier) @font-lock-function-name-face
+      (_))))
   "Treesitter font-lock settings for `fsharp-ts-mode'.")
 
 (defun fsharp-ts--defun-name (_)
@@ -352,7 +374,7 @@ Return nil if there is no name or if NODE is not a defun node."
     (setq-local treesit-font-lock-settings fsharp-ts--treesit-font-lock-settings)
     (setq-local treesit-font-lock-feature-list '((comment)
                                                  (keyword type constant module)
-                                                 (extra function)
+                                                 (extra function variable)
                                                  (operator literal punctuation)))
 
 
