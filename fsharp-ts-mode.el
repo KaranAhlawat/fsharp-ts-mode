@@ -306,6 +306,7 @@
 
    :language 'fsharp
    :feature 'literal
+   :override t
    '([(xint)
       (int)
       (int16)
