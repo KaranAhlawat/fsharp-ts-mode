@@ -527,7 +527,7 @@
      (field_initializer
       field: (_) @font-lock-property-name-face)
      (record_pattern
-      (field_pattern :anchor (_) @font-lock-variable-use-face))
+      (field_pattern :anchor (_) @font-lock-constant-face))
      (record_fields
       (record_field
        :anchor
