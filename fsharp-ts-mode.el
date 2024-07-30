@@ -154,12 +154,18 @@
 
 (defun fsharp-ts--check-fails (node)
   "Check if NODE is a keyword for indicating failure."
-  (seq-contains-p '("failwith" "failwithf" "raise" "reraise") node))
+  (seq-contains-p '("failwith" "failwithf" "raise" "reraise") (treesit-node-text node)))
 
 (defun fsharp-ts--check-builtin (node)
   "Check if NODE is a builtin type."
   (seq-contains-p '("bool" "byte" "sbyte" "int16" "uint16" "int" "uint" "int64" "uint64" "nativeint"
-                    "unativeint" "decimal" "float" "double" "float32" "single" "char" "string" "unit") node))
+                    "unativeint" "decimal" "float" "double" "float32" "single" "char" "string" "unit")
+                  (treesit-node-text node)))
+
+(defun fsharp-ts--check-builtin-module (node)
+  "Check if NODE is a builtin module."
+  (seq-contains-p '("Array" "Async" "Directory" "File" "List" "Option" "Path" "Map" "Set" "Lazy" "Seq" "Task" "String" "Result")
+                  (treesit-node-text node)))
 
 (defvar fsharp-ts--delimiters
   '("," ";")
@@ -189,7 +195,17 @@
      ((identifier) @font-lock-keyword-face
       (:pred fsharp-ts--check-fails
              @font-lock-keyword-face))
-     (compiler_directive_decl) @font-lock-keyword-face)
+     (compiler_directive_decl) @font-lock-keyword-face
+     (preproc_line
+      "#line" @font-lock-preprocessor-face)
+     (preproc_if
+      [
+       "#if" @font-lock-preprocessor-face
+       "#endif" @font-lock-preprocessor-face
+       ]
+      condition: (_):? @font-lock-preprocessor-face)
+     (preproc_else
+      "#else" @font-lock-preprocessor-face))
 
    :language 'fsharp
    :feature 'literal
@@ -227,7 +243,8 @@
 
    :language 'fsharp
    :feature 'operator
-   `([,@fsharp-ts--operators] @font-lock-operator-face)
+   `([,@fsharp-ts--operators] @font-lock-operator-face
+     (op_identifier) @font-lock-operator-face)
 
    :language 'fsharp
    :feature 'constant
@@ -249,16 +266,27 @@
        block: (_)))
      (ce_expression
       :anchor
-      (_) @font-lock-constant-face))
+      (_) @font-lock-constant-face)
+     ((value_declaration
+       (attributes
+        (attribute
+         (type
+          (long_identifier
+           (identifier) @attribute_name))))
+       (function_or_value_defn
+        (value_declaration_left
+         :anchor
+         (_) @font-lock-constant-face)))
+      (:equal @attribute_name "Literal")))
 
    :language 'fsharp
    :feature 'function
    '((function_declaration_left
-      :anchor (access_modifier):? @font-lock-keyword-face
+      (access_modifier):?
+      :anchor
       (_) @font-lock-function-name-face
-      [(argument_patterns
-        (long_identifier (identifier)))
-       (argument_patterns)] @font-lock-variable-name-face)
+      :anchor
+      (_) @font-lock-variable-name-face)
 
      (member_defn
       (method_or_prop_defn
@@ -270,251 +298,23 @@
         ]
        args: (_):* @font-lock-variable-name-face))
 
-
-     ((application_expression
-       (dot_expression
-        base:
-        [
-         (long_identifier_or_op
-          :anchor
-          (long_identifier
-           :anchor
-           (identifier) @font-lock-type-face
-           :anchor
-           (identifier):* @font-lock-property-use-face
-           :anchor
-           (identifier) @font-lock-property-use-face
-           :anchor)
-          :anchor)
-         (long_identifier_or_op
-          :anchor
-          (long_identifier
-           :anchor
-           (identifier) @font-lock-type-face
-           :anchor)
-          :anchor)
-         (long_identifier_or_op
-          :anchor
-          (long_identifier
-           :anchor
-           (identifier) @font-lock-type-face
-           (identifier):* @font-lock-property-use-face)
-          :anchor (identifier) @font-lock-property-use-face
-          :anchor)
-         (long_identifier_or_op
-          :anchor
-          (identifier) @font-lock-type-face
-          :anchor)
-         ]
-        
-        field:
-        [
-         (long_identifier_or_op
-          :anchor
-          (long_identifier
-           :anchor
-           (identifier) @font-lock-property-use-face
-           :anchor
-           (identifier):* @font-lock-property-use-face
-           :anchor
-           (identifier) @font-lock-function-call-face :anchor)
-          :anchor)
-         (long_identifier_or_op
-          :anchor
-          (long_identifier
-           :anchor
-           (identifier) @font-lock-function-call-face :anchor)
-          :anchor)
-         (long_identifier_or_op
-          :anchor
-          (_) @font-lock-property-use-face
-          :anchor (identifier) @font-lock-function-call-face :anchor)
-         (long_identifier_or_op
-          :anchor
-          (identifier) @font-lock-function-call-face
-          :anchor)
-         ]))
-      (:match "^[A-Z0-9]" @font-lock-type-face))
-
-     (application_expression
-      (dot_expression
-       base:
-       [
-        (long_identifier_or_op
-         :anchor
-         (long_identifier
-          :anchor
-          (identifier) @font-lock-variable-use-face
-          :anchor
-          (identifier):* @font-lock-property-use-face
-          :anchor
-          (identifier) @font-lock-property-use-face
-          :anchor)
-         :anchor)
-        (long_identifier_or_op
-         :anchor
-         (long_identifier
-          :anchor
-          (identifier) @font-lock-variable-use-face
-          :anchor)
-         :anchor)
-        (long_identifier_or_op
-         :anchor
-         (long_identifier
-          :anchor
-          (identifier) @font-lock-variable-use-face
-          (identifier):* @font-lock-property-use-face)
-         :anchor (identifier) @font-lock-property-use-face
-         :anchor)
-        (long_identifier_or_op
-         :anchor
-         (identifier) @font-lock-variable-use-face
-         :anchor)
-        ]
-       
-       field:
-       [
-        (long_identifier_or_op
-         :anchor
-         (long_identifier
-          :anchor
-          (identifier) @font-lock-property-use-face
-          :anchor
-          (identifier):* @font-lock-property-use-face
-          :anchor
-          (identifier) @font-lock-function-call-face :anchor)
-         :anchor)
-        (long_identifier_or_op
-         :anchor
-         (long_identifier
-          :anchor
-          (identifier) @font-lock-function-call-face :anchor)
-         :anchor)
-        (long_identifier_or_op
-         :anchor
-         (_) @font-lock-property-use-face
-         :anchor (identifier) @font-lock-function-call-face :anchor)
-        (long_identifier_or_op
-         :anchor
-         (identifier) @font-lock-function-call-face
-         :anchor)
-        ]))
-
-     ((application_expression
-       :anchor
-       [
-        (long_identifier_or_op
-         :anchor
-         (long_identifier
-          :anchor
-          (identifier) @font-lock-type-face
-          :anchor
-          (identifier):* @font-lock-property-use-face
-          :anchor
-          (identifier) @font-lock-function-call-face)
-         :anchor)
-        (long_identifier_or_op
-         :anchor
-         (long_identifier :anchor (identifier) @font-lock-type-face :anchor)
-         :anchor)
-        (long_identifier_or_op
-         :anchor
-         (long_identifier :anchor (identifier) @font-lock-type-face (identifier):* @font-lock-property-use-face :anchor)
-         :anchor
-         (identifier) @font-lock-function-call-face :anchor)
-        (long_identifier_or_op :anchor (identifier) @font-lock-type-face :anchor)])
-      (:match "^[A-Z0-9]" @font-lock-type-face))
-
      (application_expression
       :anchor
-      [
-       (long_identifier_or_op
-        :anchor
-        (long_identifier
-         :anchor
-         (identifier) @font-lock-variable-use-face
-         ("." (identifier) @font-lock-property-use-face):*
-         :anchor
-         "." (identifier) @font-lock-function-call-face)
-        :anchor)
-       (long_identifier_or_op
-        :anchor
-        (long_identifier :anchor (identifier) @font-lock-string-face :anchor)
-        :anchor)
-       (long_identifier_or_op
-        :anchor
-        (_) @font-lock-variable-use-face
-        :anchor
-        "."
-        (identifier) @font-lock-function-call-face :anchor)
-       (long_identifier_or_op :anchor (identifier) @font-lock-function-call-face :anchor)
-       (typed_expression
-        :anchor
-        (long_identifier_or_op
-         (long_identifier
-          (identifier):* :anchor
-          (identifier) @font-lock-function-call-face)))
-       ])
+      (_) @font-lock-function-call-face)
 
      ((infix_expression
        (_)
-       (infix_op) @op
-       [(long_identifier_or_op
-         :anchor
-         (long_identifier
-          :anchor
-          (identifier) @font-lock-type-face
-          :anchor
-          (identifier):* @font-lock-property-use-face
-          :anchor
-          (identifier) @font-lock-function-call-face)
-         :anchor)
-        (long_identifier_or_op
-         :anchor
-         (long_identifier :anchor (identifier) @font-lock-type-face :anchor)
-         :anchor)
-        (long_identifier_or_op
-         :anchor
-         (long_identifier :anchor (identifier) @font-lock-type-face (identifier):* @font-lock-property-use-face :anchor)
-         :anchor
-         (identifier) @font-lock-function-call-face :anchor)
-        (long_identifier_or_op :anchor (identifier) @font-lock-type-face :anchor)])
-      (:equal "|>" @op)
-      (:match "^[A-Z0-9]" @font-lock-type-face))
+       (infix_op) @operator
+       :anchor
+       (_) @font-lock-function-call-face)
+      (:equal @operator "|>"))
 
      ((infix_expression
-       (_)
-       (infix_op) @op
-       [
-        (long_identifier_or_op
-         :anchor
-         (long_identifier
-          :anchor
-          (identifier) @font-lock-variable-use-face
-          ("." (identifier) @font-lock-property-use-face):*
-          :anchor
-          "." (identifier) @font-lock-function-call-face)
-         :anchor)
-        (long_identifier_or_op
-         :anchor
-         (long_identifier :anchor (identifier) @font-lock-string-face :anchor)
-         :anchor)
-        (long_identifier_or_op
-         :anchor
-         (_) @font-lock-variable-use-face
-         :anchor
-         "."
-         (identifier) @font-lock-function-call-face :anchor)
-        (long_identifier_or_op :anchor (identifier) @font-lock-function-call-face :anchor)
-        (typed_expression
-         :anchor
-         (long_identifier_or_op
-          (long_identifier
-           (identifier):* :anchor
-           (identifier) @font-lock-function-call-face)))
-        ]
-       )
-      (:equal "|>" @op)))
+       (_) @font-lock-function-call-face
+       :anchor
+       (infix_op) @operator
+       (_))
+      (:equal @operator "<|")))
 
    :language 'fsharp
    :feature 'variable
@@ -532,51 +332,15 @@
       (record_field
        :anchor
        (identifier) @font-lock-property-name-face))
-
-     ((long_identifier_or_op
-       :anchor
-       (long_identifier
-        :anchor
-        (identifier) @font-lock-type-face
-        (identifier):* @font-lock-variable-name-face :anchor)
-       :anchor)
-      (:match "^[A-Z0-9]" @font-lock-type-face))
-     ((long_identifier_or_op
-       :anchor
-       (_) @font-lock-type-face
-       :anchor
-       (identifier) @font-lock-variable-name-face
-       :anchor)
-      (:match "^[A-Z0-9]" @font-lock-type-face))
-     ((long_identifier_or_op
-       :anchor
-       (identifier) @font-lock-type-face
-       :anchor)
-      (:match "^[A-Z0-9]" @font-lock-type-face))
-
-     (long_identifier_or_op
-      :anchor
-      (long_identifier
-       :anchor
-       (identifier) @font-lock-variable-name-face
-       (identifier):* @font-lock-variable-name-face :anchor)
-      :anchor)
-     (long_identifier_or_op
-      :anchor
-      (_) @font-lock-variable-name-face
-      :anchor
-      (identifier) @font-lock-variable-name-face
-      :anchor)
-     (long_identifier_or_op
-      :anchor
-      (identifier) @font-lock-variable-name-face
-      :anchor)
-
+     (dot_expression
+      base: (_):? @font-lock-variable-use-face)
      (value_declaration_left :anchor (_) @font-lock-variable-name-face)
-     (declaration_expression (identifier) @font-lock-variable-name-face))
+     (declaration_expression (identifier) @font-lock-variable-name-face)
+     (identifier) @font-lock-variable-use-face)
 
    :language 'fsharp
    :feature 'module
+   :override t
    '((fsi_directive_decl :anchor (string) @font-lock-type-face)
      (import_decl :anchor (_) @font-lock-type-face)
      (named_module
@@ -585,7 +349,10 @@
       name: (_) @font-lock-type-face)
      (module_defn
       :anchor
-      (_) @font-lock-type-face))
+      (_) @font-lock-type-face)
+     ((identifier) @font-lock-type-face
+      (:pred fsharp-ts--check-builtin-module
+             @font-lock-type-face)))
 
    :language 'fsharp
    :feature 'extra
