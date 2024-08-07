@@ -175,8 +175,7 @@
   (treesit-font-lock-rules
    :language 'fsharp
    :feature 'comment
-   '([(line_comment) (block_comment)] @font-lock-comment-face
-     (xml_doc) @font-lock-doc-markup-face)
+   '([(line_comment) (block_comment)] @font-lock-comment-face)
 
    :language 'fsharp
    :feature 'keyword
