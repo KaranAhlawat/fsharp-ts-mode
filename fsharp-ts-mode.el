@@ -175,8 +175,9 @@
 (defvar fsharp-ts-font-lock-rules
   `( :language fsharp
      :feature comment
-     ([(line_comment) (block_comment)] @font-lock-comment-face
-      (xml_doc) @font-lock-doc-markup-face)
+     (((line_comment) @doc @font-lock-doc-markup-face
+       (:match "^///" @doc))
+      [(line_comment) (block_comment)] @font-lock-comment-face)
 
      :language fsharp
      :feature keyword
@@ -300,7 +301,9 @@
 
       (application_expression
        :anchor
-       (_) @font-lock-function-call-face)
+       (_) @font-lock-function-call-face
+       :anchor
+       (_) @font-lock-variable-use-face)
 
       ((infix_expression
         (_)
