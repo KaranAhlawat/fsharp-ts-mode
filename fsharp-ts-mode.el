@@ -133,7 +133,7 @@
   "Function keywords for `fsharp-ts-mode'.")
 
 (defvar fsharp-ts--keywords-type
-  '("enum" "type" "inherit" "interface")
+  '("enum" "type" "inherit" "interface" "and" "exception" "struct")
   "Type definition keywords for `fsharp-ts-mode'.")
 
 (defvar fsharp-ts--keywords-try
@@ -239,7 +239,7 @@
 
      :language fsharp
      :feature type
-     ([(type) (atomic_type)] @font-lock-type-face
+     ([(simple_type) (atomic_type)] @font-lock-type-face
       (type_name type_name: (_) @font-lock-type-face))
 
      :language fsharp
@@ -253,7 +253,7 @@
        [(_) @font-lock-constant-face
         (unit) @font-lock-builtin-face])
       "null" @font-lock-builtin-face
-      ((type
+      ((simple_type
         (long_identifier (identifier) @font-lock-builtin-face))
        (:pred fsharp-ts--check-builtin
               @font-lock-builtin-face))
@@ -271,7 +271,7 @@
       ((value_declaration
         (attributes
          (attribute
-          (type
+          (simple_type
            (long_identifier
             (identifier) @attribute_name))))
         (function_or_value_defn
@@ -287,7 +287,7 @@
        :anchor
        (_) @font-lock-function-name-face
        :anchor
-       (_) @font-lock-variable-name-face)
+       (_):* @font-lock-variable-name-face)
 
       (member_defn
        (method_or_prop_defn
@@ -301,9 +301,7 @@
 
       (application_expression
        :anchor
-       (_) @font-lock-function-call-face
-       :anchor
-       (_) @font-lock-variable-use-face)
+       (_) @font-lock-function-call-face)
 
       ((infix_expression
         (_)
@@ -322,6 +320,7 @@
      :language fsharp
      :feature variable
      ((primary_constr_args (_) @font-lock-variable-name-face)
+      (class_as_reference (_) @font-lock-builtin-face)
       (identifier_pattern
        :anchor
        (_) @font-lock-constant-face
@@ -336,7 +335,7 @@
         :anchor
         (identifier) @font-lock-property-name-face))
       (dot_expression
-       base: (_):? @font-lock-variable-use-face)
+       base: (_):? @font-lock-type-face)
       (value_declaration_left :anchor (_) @font-lock-variable-name-face)
       (declaration_expression (identifier) @font-lock-variable-name-face)
       (identifier) @font-lock-variable-use-face)
@@ -359,7 +358,8 @@
 
      :language fsharp
      :feature extra
-     ((wildcard_pattern) @font-lock-regex-face
+     ((optional_pattern "?" @font-lock-operator-face)
+      (wildcard_pattern) @font-lock-regex-face
       (member_signature
        :anchor
        (identifier) @font-lock-function-name-face
@@ -368,7 +368,7 @@
          "*":* @font-lock-operator-face
          (argument_spec
           (argument_name_spec
-           "?":? @font-lock-regex-face
+           "?":? @font-lock-operator-face
            name: (_) @font-lock-variable-name-face)))))
       (member_signature
        :anchor
