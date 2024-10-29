@@ -1,0 +1,2 @@
+;;; Generated package description from fsharp-ts-mode.el  -*- no-byte-compile: t -*-
+(define-package "fsharp-ts-mode" "1.0.0" "F# Tree-Sitter Mode" '((emacs "29.1") (fsharp-mode "0")) :authors '(("Karan Ahlawat" . "ahlawatkaran12@gmail.com")) :maintainer '("Karan Ahlawat" . "ahlawatkaran12@gmail.com") :keywords '("fsharp" "languages" "tree-sitter") :url "https://github.com/KaranAhlawat/fsharp-ts-mode")

@@ -1,6 +1,6 @@
 (package "fsharp-ts-mode"
          "1.0.0"
-         "A tree-sitter based major-mode for F#")
+         "F# Tree-Sitter Mode")
 
 (website-url "https://github.com/KaranAhlawat/fsharp-ts-mode")
 (keywords "fsharp" "tree-sitter" "languages")
