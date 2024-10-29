@@ -34,6 +34,7 @@
 ;;; Code:
 
 (require 'rx)
+(require 'fsharp-mode)
 (require 'treesit)
 (require 'thingatpt)
 
@@ -407,7 +408,10 @@ Return nil if there is no name or if NODE is not a defun node."
                                                  (operator literal punctuation)))
 
 
-    (setq-local treesit-simple-indent-rules fsharp-ts--indent-rules)
+    ;; TODO: Should I keep this?
+    (setq-local syntax-propertize-function 'fsharp--syntax-propertize-function)
+    (fsharp-mode-indent-smie-setup)
+    ;; (setq-local treesit-simple-indent-rules fsharp-ts--indent-rules)
 
     ;; Navigation.
     (setq-local treesit-defun-name-function #'fsharp-ts--defun-name)

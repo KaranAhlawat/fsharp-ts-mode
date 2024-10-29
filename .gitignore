@@ -1,3 +1,4 @@
 *.fs
 *.fsi
 *.fsx
+.eask/
